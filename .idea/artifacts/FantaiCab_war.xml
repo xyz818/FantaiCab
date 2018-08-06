@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="FantaiCab:war">
+    <output-path>$PROJECT_DIR$/out/artifacts/FantaiCab_war</output-path>
+    <root id="archive" name="FantaiCab_war.war">
+      <element id="artifact" artifact-name="FantaiCab:war exploded" />
+    </root>
+  </artifact>
+</component>
