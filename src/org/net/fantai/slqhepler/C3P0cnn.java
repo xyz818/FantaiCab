@@ -17,7 +17,7 @@ public class C3P0cnn {
     public static void initDataSource() {
         cpds = new ComboPooledDataSource();
         cpds.setDataSourceName("acms01");
-        cpds.setJdbcUrl("jdbc:mysql://www.ftiotcloud.cn:3306/ft_case?autoReconnect=true&amp;autoReconnectForPools=true");//连接url
+        cpds.setJdbcUrl("jdbc:mysql://localhost:3306/ft_case?autoReconnect=true&amp;autoReconnectForPools=true");//连接url
         try {
             cpds.setDriverClass("com.mysql.jdbc.Driver");
         } catch (PropertyVetoException e) {

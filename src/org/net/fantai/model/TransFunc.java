@@ -14,6 +14,7 @@ public class TransFunc {
     public final static byte SENSORINTERVAL = 0x07;  //传感器定时上传信息
     public final static byte ALARMEXCEPTION = 0x04;  //终端异常报警信息上传
     public final static byte LOCK = (byte)0x2D;  //电磁锁操作,空调控制操作
+    public final static byte AC = (byte)0x2D;
     public final static byte ICUP = 0x08; //卡号上传信息
 
     public final static byte ICACCREDIT = 0x09; //卡 accredit号授权信息
@@ -27,5 +28,12 @@ public class TransFunc {
     public final static byte Bicker = 0x49; //抬杠
     public final static byte SensorCollectSet = (byte)0x6D; //传感器模式设置
     public final static byte PdaSensor = (byte)0x10;//pda 或者积水上传
+
+    public final static byte ACopen = (byte)0x01;
+    public final static byte ACclose = (byte)0x02;
+    public final static byte ACzr1 = (byte)0x03;
+    public final static byte ACzr2 = (byte)0x04;
+    public final static byte ACzl1 = (byte)0x05;
+    public final static byte ACzl2 = (byte)0x06;
 
 }

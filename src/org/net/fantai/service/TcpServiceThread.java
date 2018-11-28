@@ -9,9 +9,14 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.net.fantai.model.DataMsg;
 import org.net.fantai.slqhepler.SqlDao;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by fantai-xyz on 2017/9/14.
@@ -25,13 +30,46 @@ public class TcpServiceThread {
     public static  ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
      DataMsg dataMsg = new DataMsg();
     public  class TcpServerHandler extends ChannelInboundHandlerAdapter {
+
+        private int idle_count=1;
+        private int count=1;
         @Override
-        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-            ByteBuf buf = (ByteBuf) msg;
-            byte[] buffer = new byte[buf.readableBytes()];
-            buf.readBytes(buffer);
-            String body = new String(buffer);
-            dataMsg.RecieveDataMsg(buffer,buffer.length,ctx,0,null);
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+//            super.userEventTriggered(ctx, evt);
+            if (evt instanceof IdleStateEvent) {
+                IdleStateEvent event = (IdleStateEvent) evt;
+                if (IdleState.READER_IDLE.equals(event.state())) {
+
+                    if (idle_count > 2) {
+                        System.out.println("关闭这个不活跃:" + ctx.channel().remoteAddress().toString());
+
+//                        removeDeviceIp(ctx.channel().remoteAddress().toString());
+                        channels.remove(ctx.channel());
+                        ctx.channel().close();
+                        System.out.println("over");
+                    }
+                    idle_count++;
+                }
+            } else {
+                super.userEventTriggered(ctx, evt);
+            }
+
+        }
+
+
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg)  {
+            try {
+                ByteBuf buf = (ByteBuf) msg;
+                byte[] buffer = new byte[buf.readableBytes()];
+                buf.readBytes(buffer);
+                String body = new String(buffer);
+                dataMsg.RecieveDataMsg(buffer, buffer.length, ctx, 0, null);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
         }
 
         @Override
@@ -93,6 +131,7 @@ public class TcpServiceThread {
     public  class ChildChannelInitializer extends ChannelInitializer<SocketChannel> {
         @Override
         protected void initChannel(SocketChannel channel) throws Exception {
+            channel.pipeline().addLast(new IdleStateHandler(5,0,0, TimeUnit.MINUTES));
             channel.pipeline().addLast("timeServerHandler", new TcpServerHandler());
         }
     }
@@ -149,7 +188,7 @@ public class TcpServiceThread {
                     @Override
                     public void run() {
                         try {
-                            bind(6001);
+                            bind(8001);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }

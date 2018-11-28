@@ -18,34 +18,26 @@ import java.util.TimeZone;
  * Created by fantai-xyz on 2017/9/6.
  */
 public class DataMsg {
+
     private final static int FuncData = 3;  //子功能数据长度大小
     private final static int RandomRange = 1000; //随机数范围获取
-    private static Map<String,HeartCheck> m_CodeIdMap = new HashMap<>();
+    public static Map<String,HeartCheck> m_CodeIdMap = new HashMap<>();
 
-
-    private void HandleHeart(byte codeId,String code,int time)
-    {
-        if(m_CodeIdMap.containsKey(code)) //判断是否含有该codeId
-        {
+    private void HandleHeart(byte codeId,String code,int time) {
+        if(m_CodeIdMap.containsKey(code)){ //判断是否含有该codeId
             m_CodeIdMap.get(code).setRunning(false);
             m_CodeIdMap.get(code).interrupt();
-
+            HeartCheck heartCheck = new HeartCheck(codeId,code,time);
+            heartCheck.start();
+            m_CodeIdMap.put(code,heartCheck);
+        } else {
             HeartCheck heartCheck = new HeartCheck(codeId,code,time);
             heartCheck.start();
             m_CodeIdMap.put(code,heartCheck);
         }
-        else
-        {
-            HeartCheck heartCheck = new HeartCheck(codeId,code,time);
-            heartCheck.start();
-            m_CodeIdMap.put(code,heartCheck);
-
-        }
-
     }
 
-
-//    private SqlDao sqlDao = new SqlDao();
+//   private SqlDao sqlDao = new SqlDao();
 
     /**
      * author fantai-xyz
@@ -66,7 +58,7 @@ public class DataMsg {
             int len = 7 + FuncData;
             if (content != null)
                 len = 7 + FuncData + content.length;
-            System.out.println("时间：" + DataFormat.bytes2HexString(content));
+            //System.out.println("时间：" + DataFormat.bytes2HexString(content));
             buf = new byte[len];
             buf[0] = (byte) 0xDE;
             buf[1] = addr; //地址
@@ -221,9 +213,7 @@ public class DataMsg {
         return buf;
     }
 
-
-    private int getMoney(double time)
-    {
+    private int getMoney(double time) {
         int Money = 0;
         int min = (int) (time * 60);
         if(min < 10)
@@ -234,11 +224,6 @@ public class DataMsg {
             Money = (int) (time * 2.0);
         return Money;
     }
-
-
-
-
-
 
     /**
      * author fantai-xyz
@@ -251,12 +236,12 @@ public class DataMsg {
 //        ByteBuf resp = Unpooled.copiedBuffer(body.getBytes());
 //        //异步发送应答消息给客户端: 这里并没有把消息直接写入SocketChannel,而是放入发送缓冲数组中
 //        ctx.writeAndFlush(resp);
-        System.out.println("recMsg:" + DataFormat.bytes2HexString(buffer));
+       // System.out.println("recMsg:" + DataFormat.bytes2HexString(buffer));
         if (buffer[0] == (byte) 0xDE && buffer[buffer.length - 1] == (byte) 0xDF)  //0位
         {
             byte[] code = new byte[4]; // id码
             System.arraycopy(buffer, 1, code, 0, 4); //取出信息码  到底4位
-            System.out.println("code码：" + DataFormat.bytes2HexString(code));
+            //System.out.println("code码：" + DataFormat.bytes2HexString(code));
             byte[] Content = null;
             byte[] ack = {(byte) 0xDE, 0x21, 0x01, 0x03, 0x00, 0x00, 0x00, 0x08, 0x00, (byte) 0xDF};
 
@@ -271,17 +256,17 @@ public class DataMsg {
                             SqlDao.updateSensorHistory(DataFormat.bytes2HexString(code), Content,true);   //更新gps信息
                             break;
                         case (byte) 0x01:  //基础ack 回复  01
-                            System.out.println("控制成功接收");
+                           // System.out.println("控制成功接收");
                             break;
                         case TransFunc.LOCK:  //智能锁信息  2d
                             Content = new byte[len - 14];
                             System.arraycopy(buffer, 12, Content, 0, len - 14);
-                            System.out.println("0x2d");
+                           // System.out.println("0x2d");
                             if(SqlDao.updateLock(DataFormat.bytes2HexString(code),Content) > 0)
                             {
 
                             }
-                            System.out.println("suo");
+                           // System.out.println("suo");
                             ack[5] = buffer[9]; //随机数
                             ack[6] = buffer[10]; //随机数
                             ack[8] = CRC8.calcCrc8(ack, 1, 7);
@@ -290,7 +275,7 @@ public class DataMsg {
                                 ctx.writeAndFlush(ackLockup);
                             else if (tranModel == 1)
                                 ctx.writeAndFlush(new DatagramPacket(ackLockup, packet.sender()));
-                            System.out.println("功能锁控制成功");
+                           // System.out.println("功能锁控制成功");
                             break;
                         case TransFunc.PdaSensor:  //pda 传感器上传
                             Content = new byte[len - 11];
@@ -321,7 +306,7 @@ public class DataMsg {
                                 ctx.writeAndFlush(ackICup);
                             else if (tranModel == 1)
                                 ctx.writeAndFlush(new DatagramPacket(ackICup, packet.sender()));
-                            System.out.println("卡号接收更新成功");
+                            //System.out.println("卡号接收更新成功");
                             Content = new byte[len - 14];
                             System.arraycopy(buffer, 12, Content, 0, len - 14);
                             byte[] cardInfo = new byte[4];  //卡号
@@ -406,7 +391,7 @@ public class DataMsg {
                         case TransFunc.ALARMEXCEPTION:  //报警信息更新04   测试ok，完成状态
                             Content = new byte[len - 14];//内容长度
                             System.arraycopy(buffer, 12, Content, 0, len - 14);
-                            System.out.println("Content:" + DataFormat.bytes2HexString(Content));
+                          //  System.out.println("Content:" + DataFormat.bytes2HexString(Content));
                             if (SqlDao.updateAlarmValue(DataFormat.bytes2HexString(code), Content) > 0)  //更新报警记录
                             {
                             }
@@ -418,7 +403,7 @@ public class DataMsg {
                                 ctx.writeAndFlush(ackAlarm);
                             else if (tranModel == 1)
                                 ctx.writeAndFlush(new DatagramPacket(ackAlarm, packet.sender()));
-                            System.out.println("报警更新成功");
+                          //  System.out.println("报警更新成功");
                             break;
                     }
                     break;   //基础验证
@@ -433,7 +418,8 @@ public class DataMsg {
                        {
                            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
                            String Time = df.format(new Date());  //获取当前时间
-                            SqlDao.insHeartRecord(DataFormat.bytes2HexString(code),Time,strContent.substring(0,2),"0");
+                           SqlDao.insHeartRecord(DataFormat.bytes2HexString(code),Time,strContent.substring(0,2),"0");
+                           SqlDao.updateDeviceState(code[0],DataFormat.bytes2HexString(code),1);  //更新状态
                        }
                     }
                     break;    //心跳检测
@@ -448,7 +434,7 @@ public class DataMsg {
                     else if (tranModel == 1) {
                         socketAddress = packet.sender().getAddress().toString() + ":" + packet.sender().getPort();
                     }
-                    System.out.println("socketAddress:" + socketAddress);
+                 //   System.out.println("socketAddress:" + socketAddress);
                     String[] str = socketAddress.split(":");
                     if (SqlDao.UpdateCodeIP(DataFormat.bytes2HexString(code), str[0].substring(1), str[1]) > 0)//更新ip地址
                     {
@@ -456,7 +442,7 @@ public class DataMsg {
                         SqlDao.updataConnectType(DataFormat.bytes2HexString(code), tranModel);
                         int heartTime =SqlDao.getDeivceHeartNumByCode(DataFormat.bytes2HexString(code));
                         SqlDao.updateDeviceState(code[0],DataFormat.bytes2HexString(code),1);  //更新状态
-                        System.out.println("heartTime:"+heartTime);
+                    //    System.out.println("heartTime:"+heartTime);
                         HandleHeart(code[0],DataFormat.bytes2HexString(code),heartTime);
                         ack[5] = buffer[9];
                         ack[6] = buffer[10];
@@ -466,7 +452,7 @@ public class DataMsg {
                             ctx.writeAndFlush(ackIpUp);
                         else if (tranModel == 1)
                             ctx.writeAndFlush(new DatagramPacket(ackIpUp, packet.sender()));
-                        System.out.println("ip地址更新成功");
+                   //     System.out.println("ip地址更新成功");
                         Thread.sleep(1000);
                         ByteBuf sendTime = Unpooled.copiedBuffer(sendControlMsg((byte) 0x21, TransFunc.GIVETIME, timeCalendar()));
                         if (tranModel == 0)
@@ -476,12 +462,8 @@ public class DataMsg {
 
                     }
                     break;      //登陆验证
-
-
             }
         }
-
-
     }
 
 

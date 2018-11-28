@@ -50,6 +50,7 @@ public class HeartCheck extends Thread {
                 {
                     System.out.println(code+":offline");
                     SqlDao.updateDeviceState(codeId,code,0); //离线
+                    DataMsg.m_CodeIdMap.remove(code);
                     isRunning = false;
                 }
 

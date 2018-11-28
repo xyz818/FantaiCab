@@ -59,7 +59,7 @@ public class UdpServiceThread {
                         //
                         try {
 //                            b.option(ChannelOption.SO_KEEPALIVE,true);
-                            channel = b.bind(6002).sync().channel();
+                            channel = b.bind(8001).sync().channel();
                             channel.closeFuture().await();
                             System.out.println("netty start");
                         } catch (InterruptedException e) {

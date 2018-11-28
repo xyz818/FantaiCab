@@ -4,7 +4,9 @@ package org.net.fantai.slqhepler;
 
 import org.net.fantai.model.DataFormat;
 
+import java.math.BigDecimal;
 import java.sql.*;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -16,7 +18,7 @@ import java.util.Date;
  */
 public class SqlDao {
     private static String dbDriver = "com.mysql.jdbc.Driver";
-    private static String dbUrl = "jdbc:mysql://www.ftiotcloud.cn:3306/fantainb?autoReconnect=true&amp;autoReconnectForPools=true";// 数据库地址
+    private static String dbUrl = "jdbc:mysql://localhost:3306/ft_case?autoReconnect=true&amp;autoReconnectForPools=true";// 数据库地址
     private static String dbUser = "root";// 用户名
     private static String dbPass = "test123"; // 用户密码
     static Connection connection = null;
@@ -141,9 +143,9 @@ public class SqlDao {
          *
          * */
         int contentLen = (src[21] & 0xFF) + 31;
-        System.out.println(src.length + ";" + contentLen);
+     //   System.out.println(src.length + ";" + contentLen);
         if (src.length == ((src[21] & 0xFF) + 31)) {
-            System.out.println("智能锁回复");
+          //  System.out.println("智能锁回复");
             if (src[0] == (byte) '*' && src[1] == (byte) 0x5A && src[src.length - 1] == (byte) '#') {
                 if (connection == null || connection.isClosed())
                     connection = getConn();
@@ -209,7 +211,7 @@ public class SqlDao {
                         String strTime = DataFormat.bytes2HexString(time);
                         String timeValue = String.format("%s-%s-%s %s:%s:%s", strTime.substring(0, 4), strTime.substring(4, 6),
                                 strTime.substring(6, 8), strTime.substring(8, 10), strTime.substring(10, 12), strTime.substring(12, 14));  //截取时间数值
-                        System.out.println("timeValue:" + timeValue);
+                      //  System.out.println("timeValue:" + timeValue);
                         double V = DataFormat.getV(src[23]);
                         String sql = "update sl_lockinfo set sl_li_status = ?,sl_li_electric = ?,sl_li_time = ? where  sy_di_code = ?";
                         PreparedStatement pstLockInfo = connection.prepareStatement(sql);
@@ -324,7 +326,7 @@ public class SqlDao {
             String distance = String.valueOf((src[18] & 0xFF) + (src[19] & 0xFF) * 256 + (src[20] & 0xFF) * 256 * 256);
             String dirct = String.valueOf((((src[16] << 2) & 0xFF) >> 2) & 0x3F);  //方向
             //经纬度，纬度，经度，速度，方向值，里程碑
-            String value = titude + "," + longtitudeValue + "," + latitudeValue;
+            String value = titude + "," + new DecimalFormat("0.0000").format(new BigDecimal(longtitudeValue)) + "," + new DecimalFormat("0.0000").format(new BigDecimal(latitudeValue));
             String other = speedValue + "," + Integer.valueOf(dirct) * 10 + "," + distance;
 
 
@@ -413,25 +415,20 @@ public class SqlDao {
                     tem = "-" + String.valueOf((src[25] & 0xFF) / 10.0);
                 double d_damp = ((src[27] & 0xFF) + (src[26] & 0xFF) * 256) / 10.0;
                 damp = String.valueOf(d_damp);  //湿度
-                System.out.println("damp:" + damp);
+               // System.out.println("damp:" + damp);
                 double d_press = ((src[29] & 0xFF) + (src[28] & 0xFF) * 256) / 10.0;
                 press = String.valueOf(d_press);   //气压
-                System.out.println("press:" + press);
-
+             //   System.out.println("press:" + press);
                 if (src[30] == 0x01) {
                     water = "无积水";
                 } else if (src[30] == (byte) 0x0FF) {
                     water = "有积水";
                 }
-
                 byte[] id = new byte[8];
                 System.arraycopy(src, 8, id, 0, 4);
                 strId = "PDA:" + DataFormat.bytes2HexString(id);
-                System.out.println("strId" + strId);
-
-
+               // System.out.println("strId" + strId);
             }
-
         }
 
         if (!tem.equals("") && !damp.equals("") && !press.equals("") && !timeValue.equals("")) {
@@ -448,20 +445,34 @@ public class SqlDao {
             pstInser.setString(8, elect);
             pstInser.setString(9, strId);
             if (pstInser.executeUpdate() > 0) {
-                String sql = "update se_sensorinfo set se_si_tem = ?," +
-                        "se_si_hum=? ,se_si_pressure = ? ,se_si_time = ?" +
-                        " ,se_si_water = ?,se_si_380=? ,se_si_electric = ?  " +
-                        " where sy_di_code = ?";
-                PreparedStatement pst = connection.prepareStatement(sql);
-                pst.setDouble(1, Double.valueOf(tem));
-                pst.setDouble(2, Double.valueOf(damp));
-                pst.setDouble(3, Double.valueOf(press));
-                pst.setTimestamp(4, Timestamp.valueOf(timeValue));
-                pst.setString(5, water);
-                pst.setInt(6, highV);
-                pst.setString(7, elect);
-                pst.setString(8, code);
-                return pst.executeUpdate();
+               // System.out.println(Double.valueOf(tem) + "," + Double.valueOf(damp) + "," + Double.valueOf(press) + "," + water + "," + highV + "," + elect + "," + code);
+                if(!Double.valueOf(tem).equals(0.0) && !Double.valueOf(damp).equals(0.0)) {
+                    String sql = "update se_sensorinfo set se_si_tem = ?," +
+                            "se_si_hum=? ,se_si_pressure = ? ,se_si_time = ?" +
+                            " ,se_si_water = ?,se_si_380=? ,se_si_electric = ?  " +
+                            " where sy_di_code = ?";
+                    PreparedStatement pst = connection.prepareStatement(sql);
+                    pst.setDouble(1, Double.valueOf(tem));
+                    pst.setDouble(2, Double.valueOf(damp));
+                    pst.setDouble(3, Double.valueOf(press));
+                    pst.setTimestamp(4, Timestamp.valueOf(timeValue));
+                    pst.setString(5, water);
+                    pst.setInt(6, highV);
+                    pst.setString(7, elect);
+                    pst.setString(8, code);
+                    return pst.executeUpdate();
+                }else{
+                    String sql1 = "update se_sensorinfo set " +
+                            "se_si_time = ?" +
+                            " ,se_si_water = ?,se_si_electric = ?  " +
+                            " where sy_di_code = ?";
+                    PreparedStatement pst = connection.prepareStatement(sql1);
+                    pst.setTimestamp(1, Timestamp.valueOf(timeValue));
+                    pst.setString(2, water);
+                    pst.setString(3, elect);
+                    pst.setString(4, code);
+                    return pst.executeUpdate();
+                }
             }
         }
         return 0;
@@ -513,32 +524,32 @@ public class SqlDao {
              *    00 00 00 00 00 00 32 33 34 35 36 37
              *    ‘#’   38
              * */
-            System.out.println("传感器pda1");
-            if (src.length >= 39)
-                System.out.println("传感器pda");
-            if (src[0] == (byte) '*' && src[38] == (byte) '#') {
-                byte[] time = new byte[6];
-                System.arraycopy(src, 32, time, 0, 6);
-                String strTime = DataFormat.bytes2HexString(time);
-                timeValue = String.format("20%s-%s-%s %s:%s:%s", strTime.substring(0, 2), strTime.substring(2, 4),
-                        strTime.substring(4, 6), strTime.substring(6, 8), strTime.substring(8, 10), strTime.substring(10, 12));  //截取时间数值
-                elect = DataFormat.getV(src[22]);
-                if (((src[24] >> 7) & 0x01) == 0x00)
-                    tem = String.valueOf((src[25] & 0xFF) / 10.0);
-                else
-                    tem = "-" + String.valueOf((src[25] & 0xFF) / 10.0);
-                double d_damp = ((src[27] & 0xFF) + (src[26] & 0xFF) * 256) / 10.0;
-                damp = String.valueOf(d_damp);  //湿度
-                System.out.println("damp:" + damp);
-                double d_press = ((src[29] & 0xFF) + (src[28] & 0xFF) * 256) / 10.0;
-                press = String.valueOf(d_press);   //气压
-                System.out.println("press:" + press);
-                byte[] id = new byte[8];
-                System.arraycopy(src, 8, id, 0, 4);
-                strId = "PDA:" + DataFormat.bytes2HexString(id);
-                System.out.println("strId" + strId);
+        //    System.out.println("传感器pda1");
+            if (src.length >= 39) {
+                //System.out.println("传感器pda");
+                if (src[0] == (byte) '*' && src[38] == (byte) '#') {
+                    byte[] time = new byte[6];
+                    System.arraycopy(src, 32, time, 0, 6);
+                    String strTime = DataFormat.bytes2HexString(time);
+                    timeValue = String.format("20%s-%s-%s %s:%s:%s", strTime.substring(0, 2), strTime.substring(2, 4),
+                            strTime.substring(4, 6), strTime.substring(6, 8), strTime.substring(8, 10), strTime.substring(10, 12));  //截取时间数值
+                    elect = DataFormat.getV(src[22]);
+                    if (((src[24] >> 7) & 0x01) == 0x00)
+                        tem = String.valueOf((src[25] & 0xFF) / 10.0);
+                    else
+                        tem = "-" + String.valueOf((src[25] & 0xFF) / 10.0);
+                    double d_damp = ((src[27] & 0xFF) + (src[26] & 0xFF) * 256) / 10.0;
+                    damp = String.valueOf(d_damp);  //湿度
+                  //  System.out.println("damp:" + damp);
+                    double d_press = ((src[29] & 0xFF) + (src[28] & 0xFF) * 256) / 10.0;
+                    press = String.valueOf(d_press);   //气压
+                  //  System.out.println("press:" + press);
+                    byte[] id = new byte[8];
+                    System.arraycopy(src, 8, id, 0, 4);
+                    strId = "PDA:" + DataFormat.bytes2HexString(id);
+                  //  System.out.println("strId" + strId);
+                }
             }
-
 
         }
         if (!tem.equals("") && !damp.equals("") && !press.equals("") && !timeValue.equals("")) {
@@ -593,7 +604,7 @@ public class SqlDao {
             connection = getConn();
 
         if (src.length >= 17) {
-            System.out.println("报警更新数据库");
+          //  System.out.println("报警更新数据库");
             if (src[0] == (byte) '*' && src[src.length - 1] == (byte) '#')  //判断终止符和起始符
             {
                 String alramType = "", electValue = "", state = "", machineState = "", highV = "", water = "";
@@ -602,25 +613,25 @@ public class SqlDao {
                     //报警类型
                     {
                         if ((src[2] & 0x01) == 0x01) {
-                            alramType += "电池欠压 ";
+                            alramType += "电池欠压报警 ";
                         }
                         if (((src[2] >> 1) & 0x01) == 0x01) {
                             alramType += "高温报警 ";
                         }
                         if (((src[2] >> 2) & 0x01) == 0x01) {
-                            alramType += ",低温报警 ";
+                            alramType += "低温报警 ";
                         }
                         if (((src[2] >> 3) & 0x01) == 0x01) {
-                            alramType += "高湿 ";
+                            alramType += "高湿报警 ";
                         }
                         if (((src[2] >> 4) & 0x01) == 0x01) {
-                            alramType += "干燥 ";
+                            alramType += "干燥报警 ";
                         }
                         if (((src[2] >> 5) & 0x01) == 0x01) {
-                            alramType += "380v动力电压 ";
+                            alramType += "380v动力电压报警 ";
                         }
                         if (((src[2] >> 6) & 0x01) == 0x01) {
-                            alramType += "积水 ";
+                            alramType += "积水报警 ";
                         }
 
                     }
@@ -656,7 +667,7 @@ public class SqlDao {
                     byte[] bCode = DataFormat.hexStringToBytes(code);
                     byte[] time = new byte[6];
                     System.arraycopy(src, 10, time, 0, 6);
-                    System.out.println("time" + DataFormat.bytes2HexString(time));
+                  //  System.out.println("time" + DataFormat.bytes2HexString(time));
                     String timeStr = DataFormat.bytes2HexString(time);
 
                     String timeValue = String.format("20%s-%s-%s %s:%s:%s", timeStr.substring(0, 2),
@@ -684,7 +695,7 @@ public class SqlDao {
                     pst.setString(7, water);  //积水
                     pst.setString(8, highV);  //动力电压
                     pst.setString(9, electValue);  //电压值范围
-                    System.out.println("数据操作成功");
+                  //  System.out.println("数据操作成功");
                     return pst.executeUpdate();
 
                 }
@@ -852,7 +863,7 @@ public class SqlDao {
         if (connection == null || connection.isClosed())
             connection = getConn();
         String carNum = getCarNum(code);
-        System.out.println("carNum" + carNum);
+       // System.out.println("carNum" + carNum);
         String sql = "insert into st_parkrecord(st_ci_carnum,st_pr_stime,st_pr_status) values(?,?,?)";
         PreparedStatement pst = connection.prepareStatement(sql);
         pst.setString(1, carNum);
@@ -968,7 +979,7 @@ public class SqlDao {
             String sql = "";
             if (codeId.equals("0B")) {
                 sql = "update sl_lockinfo set sl_li_online = ? where sy_di_code = ?";
-            } else if (codeId.equals("0F")) {
+            } else if (codeId.equals("33")) {
                 sql = "update se_sensorinfo set se_si_online = ? where sy_di_code = ?";
             } else if (codeId.equals("12")) {
                 sql = "update st_carinfo set st_ci_online = ? where sy_di_code = ?";
@@ -978,7 +989,7 @@ public class SqlDao {
             pst.setInt(1, state);
             pst.setString(2, code);
             pst.executeUpdate();
-            System.out.println(code + ":数据库更改状态" + state);
+         //   System.out.println(code + ":数据库更改状态" + state);
         }
 
     }
@@ -999,7 +1010,7 @@ public class SqlDao {
             case (byte) 0x0B: // 锁状态信息
                 sql = "update sl_lockinfo set sl_li_online = ? where sy_di_code = ?";
                 break;
-            case (byte) 0x0F:  //农业信息
+            case (byte) 0x33:  //农业信息
                 sql = "update se_sensorinfo set se_si_online = ? where sy_di_code = ?";
                 break;
             case (byte) 0x12:  //停车场信息
@@ -1010,7 +1021,7 @@ public class SqlDao {
         pst.setInt(1, state);
         pst.setString(2, code);
         pst.executeUpdate();
-        System.out.println(code + ":数据库更改状态" + state);
+       // System.out.println(code + ":数据库更改状态" + state);
     }
 
     /**
